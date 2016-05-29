@@ -15,6 +15,7 @@ public class RestClass {
   private String className;
   private RestClass parent;
   private List<Param> params = new ArrayList<Param>();
+  private Class<?> dummyClass;
 
   public RestClass(Class<?> originalClass) {
     this(originalClass, null, null);
@@ -81,5 +82,13 @@ public class RestClass {
 
   public void setSimpleType(String simpleType) {
     this.simpleType = simpleType;
+  }
+
+  public Class<?> getDummyClass() {
+    return dummyClass;
+  }
+
+  public void setDummyClass(Class<?> dummyClass) {
+    this.dummyClass = dummyClass;
   }
 }

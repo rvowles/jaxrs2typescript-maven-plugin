@@ -15,7 +15,6 @@
  ******************************************************************************/
 package com.bluetrainsoftware.maven.jaxrs2typescript;
 
-import nz.co.foodstuffs.identity.api.*;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -66,7 +65,7 @@ public class DescriptorGeneratorTest {
 
   @Test
   public void testExampleService() {
-    new ServiceDescriptorGenerator(Arrays.asList(nz.co.foodstuffs.identity.api.IdentityService.class, UserService.class),
+    new ServiceDescriptorGenerator(Arrays.asList(ExampleService.class, AnotherService.class, IdentityService.class),
       out, "http://localhost:8080");
   }
 }

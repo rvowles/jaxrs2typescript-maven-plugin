@@ -95,7 +95,7 @@ public class ServiceDescriptorGenerator {
   }
 
   Models getModels() {
-    return new Models(modelClasses.values().stream().filter(r -> r.getSimpleType() == null).collect(Collectors.toList()));
+    return new Models(modelClasses.values().stream().filter(r -> r.getSimpleType() == null || r.getDummyClass() != null).collect(Collectors.toList()));
   }
 
   private RestClass addModel(RestClass clazz) {
@@ -104,9 +104,14 @@ public class ServiceDescriptorGenerator {
     return clazz;
   }
 
+  private static class DummyResponse {
+  }
+
   /** Those classes will be transformed as "any" */
   private void addDummyMappingForJAXRSClasses() {
-    addModel(new RestClass(Response.class, "any"));
+    RestClass response = new RestClass(Response.class, "Response");
+    response.setDummyClass(DummyResponse.class);
+    addModel(response);
     addModel(new RestClass(UriInfo.class, "any"));
     addModel(new RestClass(Request.class, "any"));
     addModel(new RestClass(Void.class, "void"));
@@ -205,7 +210,8 @@ public class ServiceDescriptorGenerator {
     final RestClass clazz = new RestClass(type, null, genericType);
 
     // to allow us to deal with recursive issues, we change this to always add the class
-    if (modelClasses.get(clazz.getOriginalClass()) == null) {
+    RestClass realClazz = modelClasses.get(clazz.getOriginalClass());
+    if (realClazz == null) {
       modelClasses.put(clazz.getOriginalClass(), clazz);
 
       Class<?> restClass = clazz.getOriginalClass();
@@ -218,9 +224,6 @@ public class ServiceDescriptorGenerator {
         // protect against Groovy
         if (!field.getName().equals("property") && !field.getName().contains("$") &&
               !(field.getName().equals("metaClass") && field.getType().getName().equals("groovy.lang.MetaClass"))) {
-          if (field.getName().equalsIgnoreCase("roles")) {
-            System.out.println("here");
-          }
           Param param = new Param(field.getName(), cacheClassType(field.getType(), field.getGenericType()),
             field.getType().isArray() || Collection.class.isAssignableFrom(field.getType()));
 
@@ -231,9 +234,11 @@ public class ServiceDescriptorGenerator {
       if (restClass.getSuperclass() != null && restClass.getSuperclass() != Object.class) {
         clazz.setParent(cacheClassType(restClass.getSuperclass(), restClass.getGenericSuperclass()));
       }
+
+      realClazz = clazz;
     }
 
-    return clazz;
+    return realClazz;
   }
 
   private List<Param> generateParams(Method method) {

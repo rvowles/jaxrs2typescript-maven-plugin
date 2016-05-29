@@ -85,7 +85,7 @@ export class {{name}} {
      *
      {{#params}}* @param {{name}}
      {{/params}}*/
-    public {{name}} ({{#params}}{{name}}: {{dataType.className}}{{#hasMore}}, {{/hasMore}}{{/params}}) : Promise<{ response: http.IncomingMessage; {{#hasReturnType}}body: {{{returnType.className}}}; {{/hasReturnType}}{{^hasReturnType}}body?: any; {{/hasReturnType}} }> {
+    public {{name}} ({{#params}}{{name}}: {{#array}}Array<{{/array}}{{dataType.className}}{{#array}}>{{/array}}{{#hasMore}}, {{/hasMore}}{{/params}}) : Promise<{ response: http.IncomingMessage; {{#hasReturnType}}body: {{{returnType.className}}}; {{/hasReturnType}}{{^hasReturnType}}body?: any; {{/hasReturnType}} }> {
         const localVarPath = this.basePath + `{{path}}`;
 
         let queryParameters: any = {};
