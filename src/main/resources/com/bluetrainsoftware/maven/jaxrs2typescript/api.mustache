@@ -14,7 +14,7 @@ let defaultBasePath: string = "{{basePath}}";
 
 export class {{className}} {{#parent}}extends {{{parent.className}}} {{/parent}}{
 {{#params}}
-    {{name}}: {{#isEnum}}{{className}}.{{{datatypeWithEnum}}}{{/isEnum}}{{^isEnum}}{{{dataType.className}}}{{/isEnum}};
+    {{name}}: {{#isEnum}}{{className}}.{{{datatypeWithEnum}}}{{/isEnum}}{{^isEnum}}{{#array}}Array<{{/array}}{{{dataType.className}}}{{#array}}>{{/array}}{{/isEnum}};
 {{/params}}
 }
 

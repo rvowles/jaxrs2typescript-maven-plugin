@@ -31,6 +31,7 @@ public class Param {
   public Param(String name, RestClass dataType, boolean array) {
     this.name = name;
     this.dataType = dataType;
+    this.array = array;
   }
 
   public Param(RestClass dataType, boolean array) {

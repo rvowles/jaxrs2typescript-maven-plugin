@@ -46,6 +46,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -123,6 +124,7 @@ public class ServiceDescriptorGenerator {
     addModel(new RestClass(Integer.class, "number"));
     addModel(new RestClass(int.class, "number"));
     addModel(new RestClass(Map.class, "any"));
+    addModel(new RestClass(Date.class, "Date"));
   }
 
   /**
@@ -202,14 +204,23 @@ public class ServiceDescriptorGenerator {
     // have to figure out what this actually is (it could be generic or an array)
     final RestClass clazz = new RestClass(type, null, genericType);
 
-    return modelClasses.computeIfAbsent(clazz.getOriginalClass(), restClass -> {
+    // to allow us to deal with recursive issues, we change this to always add the class
+    if (modelClasses.get(clazz.getOriginalClass()) == null) {
+      modelClasses.put(clazz.getOriginalClass(), clazz);
+
+      Class<?> restClass = clazz.getOriginalClass();
 
       if (restClass.getName().startsWith("java.lang")) {
         throw new RuntimeException(String.format("Attempted to use class `%s` that has no default mapper.", restClass.getName()));
       }
 
       Arrays.stream(restClass.getDeclaredFields()).forEach(field -> {
-        if (!field.getName().equals("property") && !field.getName().contains("$")) {
+        // protect against Groovy
+        if (!field.getName().equals("property") && !field.getName().contains("$") &&
+              !(field.getName().equals("metaClass") && field.getType().getName().equals("groovy.lang.MetaClass"))) {
+          if (field.getName().equalsIgnoreCase("roles")) {
+            System.out.println("here");
+          }
           Param param = new Param(field.getName(), cacheClassType(field.getType(), field.getGenericType()),
             field.getType().isArray() || Collection.class.isAssignableFrom(field.getType()));
 
@@ -220,10 +231,9 @@ public class ServiceDescriptorGenerator {
       if (restClass.getSuperclass() != null && restClass.getSuperclass() != Object.class) {
         clazz.setParent(cacheClassType(restClass.getSuperclass(), restClass.getGenericSuperclass()));
       }
+    }
 
-      return clazz;
-    });
-
+    return clazz;
   }
 
   private List<Param> generateParams(Method method) {
