@@ -1,0 +1,20 @@
+= JAX-RS to Typescript Converter Maven Plugin
+
+== Overview
+
+There are a number of Maven plugins that attempt to convert JAX-RS to Typescript. One
+valiant effort creates the base types as interfaces and method calls as .d.ts files. Another
+uses Swagger and requires you to generate the Swagger definitions via another plugin.
+
+This attempt is based on my current itch - I want to be able to include the artifacts that provide
+JAX-RS APIs as provided dependencies in a Typescript Node Restify server. Then I want to just tell
+the plugin to scan for whatever APIs it can find and emit those to a Typescript file, each Resource
+exposes as a different service class.
+
+There are some "tests" in the project - thats quoted because they aren't asserted. Its pretty painful to do that.
+
+AnotherService.java
+[source,java]
+----
+include::./src/test/java/com/bluetrainsoftware/maven/jaxrs2typescript/AnotherService.java[]
+----
