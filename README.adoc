@@ -11,10 +11,549 @@ JAX-RS APIs as provided dependencies in a Typescript Node Restify server. Then I
 the plugin to scan for whatever APIs it can find and emit those to a Typescript file, each Resource
 exposes as a different service class.
 
-There are some "tests" in the project - thats quoted because they aren't asserted. Its pretty painful to do that.
+There are some "tests" in the project - thats quoted because they aren't asserted. Its pretty painful to do that. The
+best way for me to test this is when my apps fail to compile or run their tests.
 
-AnotherService.java
+== Requirements
+
+* Maven 3.3.9
+* Java 8
+* JAX-RS 2
+
+== How to use
+
+Always check https://search.maven.org for the latest version!
+
+.pom.xml
+[source,xml]
+----
+<plugin>
+        <groupId>com.bluetrainsoftware.maven</groupId>
+        <artifactId>jaxrs2typescript-maven-plugin</artifactId>
+        <version>1.1</version>
+        <executions>
+          <execution>
+            <id>generate</id>
+            <goals><goal>generate</goal></goals>
+            <phase>process-classes</phase>
+            <configuration>
+              <sourceModules>
+                <sourceModule>
+                  <className>com.somecompany.oauth2.jwt.OAuth2Resource</className>
+                  <typescriptModule>oauth2ServiceModule</typescriptModule>
+                  <basePath>http://localhost:8080</basePath>
+                </sourceModule>
+                <sourceModule>
+                  <!-- everything below this package -->
+                  <packageName>com.somecompany.identity.api</packageName>
+                  <typescriptModule>identityServiceModule</typescriptModule>
+                  <basePath>http://localhost:8090</basePath>
+                </sourceModule>
+              </sourceModules>
+              <tsOutFolder>app/backend-services</tsOutFolder>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+----
+
+== License
+
+As always, my license is MIT. I have copied a bit of ASF code and modified it, so that probably retains its ASF license.
+There is also the mysterious IncludeProjectDependenciesComponentConfigurator - which appears all over Github with
+different licenses and attributions. I have made a note of this in the file, but I have also changed it to work with
+Maven 3.3.x.
+
+== Recommendations
+
+If you have a typescript Node project that needs to talk to JAX-RS backends that you have the source for, I recommend
+the following.
+
+* Create a POM file and bring in all the APIs you need as "provided" dependencies.
+* Make the POM and <packaging>pom</packaging> project, you won't be creating an artifact
+* Where you store the created .ts files - do a gitignore on that folder. Make sure on your build server they are always
+generated before your Node build/compile runs so changes in them will cause your Typescript app to fail.
+
+== Notes
+
+Some notes and potential issues which I may run into.
+
+* I am lazy with beans - I assume that if you defined a private field in a bean you are returning in an API, you
+expecting to return it to the client. We design our API artifacts separate from  their implementation.
+* I'm not sure if embedded resources work, I haven't needed them yet and will fix this when I do need it.
+* I only support Bearer tokens (i.e. OAuth variants). I'm a big fan of JSON Web Tokens, I'm happy to receive PRs to make
+this better.
+
+== Thanks
+
+I spent some time with https://github.com/raphaeljolivet/java2typescript[java2typescript] - before ending up changing
+almost everything in it. So shout out to Raphael.
+
+I also pinched the original mustache file from the Swagger Codegen project. So thanks go to that community.
+
+== Client Proxies in Java
+
+This is an excellent project for Spring Client's that use JAXRS client proxies. It automatically injects clients.
+
+.pom.xml
+[source,xml]
+----
+		<dependency>
+			<groupId>com.github.jmnarloch</groupId>
+			<artifactId>spring-jax-rs-client-proxy</artifactId>
+			<version>1.0.1</version>
+		</dependency>
+----
+
+== Samples
+
+These three services are processed in the test.
+
+.AnotherService.java
 [source,java]
 ----
-include::./src/test/java/com/bluetrainsoftware/maven/jaxrs2typescript/AnotherService.java[]
+@Path("/identity2")
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+public interface AnotherService {
+  @GET
+  public int getPeanuts();
+
+  @POST
+  String setPeanuts(@FormParam("peanuts") int peanuts);
+}
+----
+
+.Identity.java
+[source,java]
+----
+@Path("/identity")
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+public interface IdentityService {
+
+  @POST
+  @Path("{id}/validate/{passwd}")
+  User validateUser(@PathParam("id") String id, @PathParam("passwd") String password)
+    throws NotFoundException, NoPermissionException;
+}
+----
+
+.Example.java
+[source,java]
+----
+	@Path("/")
+	static private interface ExampleService {
+
+		@Path("/{id}")
+		@POST
+		public String aPostMethod(//
+                              @QueryParam("q1") String queryParam, //
+                              @PathParam("id") String id, //
+                              @FormParam("formParam") Integer formParam, //
+                              String postPayload);
+
+		@Path("/{id}")
+		@GET
+		public void aGetMethod(//
+                           @QueryParam("q1") String queryParam, //
+                           @PathParam("id") String id, //
+                           @FormParam("formParam") Integer formParam, //
+                           MyObject postPayload);
+
+	}
+----
+
+This becomes Typescript as follows:
+
+.allServicesModule
+[source,typescript]
+----
+import request = require('request');
+import http = require('http');
+
+let defaultBasePath: string = "http://localhost:8080";
+
+// ===============================================
+// This file is autogenerated - Please do not edit
+// ===============================================
+
+/* tslint:disable:no-unused-variable */
+
+
+export class MyObject {
+    field: string;
+}
+
+
+export class User {
+    firstName: string;
+    lastName: string;
+    id: string;
+    roles: string;
+}
+
+
+export interface Authentication {
+    /**
+    * Apply authentication settings to header and query params.
+    */
+    applyToRequest(requestOptions: request.Options): void;
+}
+
+export class OAuth implements Authentication {
+    public accessToken: string;
+
+    applyToRequest(requestOptions: request.Options): void {
+        requestOptions.headers["Authorization"] = "Bearer " + this.accessToken;
+    }
+}
+
+export class ExampleService {
+    protected basePath : string;
+    protected defaultHeaders : any = {};
+    protected accessToken : string;
+    protected servicePath : string = '/';
+
+    constructor(accessToken: string, url?: string) {
+      this.accessToken = accessToken;
+
+      if (url) {
+        this.basePath = url;
+      } else {
+        this.basePath = defaultBasePath;
+      }
+
+      this.basePath = this.basePath + this.servicePath;
+    }
+
+    private extendObj<T1,T2>(objA: T1, objB: T2) {
+        for(let key in objB){
+            if(objB.hasOwnProperty(key)){
+                objA[key] = objB[key];
+            }
+        }
+        return <T1&T2>objA;
+    }
+
+    /**
+     *
+     * @param q1
+     * @param id
+     * @param formParam
+     * @param body
+     */
+    public aGetMethod (q1: string, id: string, formParam: number, body: MyObject) : Promise<{ response: http.IncomingMessage; body?: any;  }> {
+        const localVarPath = this.basePath + `/${id}`;
+
+        let queryParameters: any = {};
+        let headerParams: any = this.extendObj({}, this.defaultHeaders);
+        let formParams: any = {};
+
+        if (q1 !== undefined) {
+            queryParameters['q1'] = q1;
+        }
+
+
+        let useFormData = false;
+
+        if (formParam !== undefined) {
+            formParams['formParam'] = formParam;
+        }
+
+        let requestOptions: request.Options = {
+            method: 'GET',
+            qs: queryParameters,
+            headers: headerParams,
+            uri: localVarPath,
+            json: true,
+        };
+
+        if (this.accessToken) {
+          requestOptions.headers["Authorization"] = "Bearer " + this.accessToken;
+        }
+
+        if (Object.keys(formParams).length) {
+            if (useFormData) {
+                (<any>requestOptions).formData = formParams;
+            } else {
+                requestOptions.form = formParams;
+            }
+        }
+        return new Promise<{ response: http.IncomingMessage; body?: any;  }>((resolve, reject) => {
+            request(requestOptions, (error, response, body) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    if (response.statusCode >= 200 && response.statusCode <= 299) {
+                        resolve({ response: response, body: body });
+                    } else {
+                        reject({ response: response, body: body });
+                    }
+                }
+            });
+        });
+    }
+    /**
+     *
+     * @param q1
+     * @param id
+     * @param formParam
+     * @param body
+     */
+    public aPostMethod (q1: string, id: string, formParam: number, body: string) : Promise<{ response: http.IncomingMessage; body: string;  }> {
+        const localVarPath = this.basePath + `/${id}`;
+
+        let queryParameters: any = {};
+        let headerParams: any = this.extendObj({}, this.defaultHeaders);
+        let formParams: any = {};
+
+        if (q1 !== undefined) {
+            queryParameters['q1'] = q1;
+        }
+
+
+        let useFormData = false;
+
+        if (formParam !== undefined) {
+            formParams['formParam'] = formParam;
+        }
+
+        let requestOptions: request.Options = {
+            method: 'POST',
+            qs: queryParameters,
+            headers: headerParams,
+            uri: localVarPath,
+            json: true,
+        };
+
+        if (this.accessToken) {
+          requestOptions.headers["Authorization"] = "Bearer " + this.accessToken;
+        }
+
+        if (Object.keys(formParams).length) {
+            if (useFormData) {
+                (<any>requestOptions).formData = formParams;
+            } else {
+                requestOptions.form = formParams;
+            }
+        }
+        return new Promise<{ response: http.IncomingMessage; body: string;  }>((resolve, reject) => {
+            request(requestOptions, (error, response, body) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    if (response.statusCode >= 200 && response.statusCode <= 299) {
+                        resolve({ response: response, body: body });
+                    } else {
+                        reject({ response: response, body: body });
+                    }
+                }
+            });
+        });
+    }
+}
+export class AnotherService {
+    protected basePath : string;
+    protected defaultHeaders : any = {};
+    protected accessToken : string;
+    protected servicePath : string = '/identity2/';
+
+    constructor(accessToken: string, url?: string) {
+      this.accessToken = accessToken;
+
+      if (url) {
+        this.basePath = url;
+      } else {
+        this.basePath = defaultBasePath;
+      }
+
+      this.basePath = this.basePath + this.servicePath;
+    }
+
+    private extendObj<T1,T2>(objA: T1, objB: T2) {
+        for(let key in objB){
+            if(objB.hasOwnProperty(key)){
+                objA[key] = objB[key];
+            }
+        }
+        return <T1&T2>objA;
+    }
+
+    /**
+     *
+     */
+    public getPeanuts () : Promise<{ response: http.IncomingMessage; body: number;  }> {
+        const localVarPath = this.basePath + ``;
+
+        let queryParameters: any = {};
+        let headerParams: any = this.extendObj({}, this.defaultHeaders);
+        let formParams: any = {};
+
+
+        let useFormData = false;
+
+        let requestOptions: request.Options = {
+            method: 'GET',
+            qs: queryParameters,
+            headers: headerParams,
+            uri: localVarPath,
+            json: true,
+        };
+
+        if (this.accessToken) {
+          requestOptions.headers["Authorization"] = "Bearer " + this.accessToken;
+        }
+
+        if (Object.keys(formParams).length) {
+            if (useFormData) {
+                (<any>requestOptions).formData = formParams;
+            } else {
+                requestOptions.form = formParams;
+            }
+        }
+        return new Promise<{ response: http.IncomingMessage; body: number;  }>((resolve, reject) => {
+            request(requestOptions, (error, response, body) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    if (response.statusCode >= 200 && response.statusCode <= 299) {
+                        resolve({ response: response, body: body });
+                    } else {
+                        reject({ response: response, body: body });
+                    }
+                }
+            });
+        });
+    }
+    /**
+     *
+     * @param peanuts
+     */
+    public setPeanuts (peanuts: number) : Promise<{ response: http.IncomingMessage; body: string;  }> {
+        const localVarPath = this.basePath + ``;
+
+        let queryParameters: any = {};
+        let headerParams: any = this.extendObj({}, this.defaultHeaders);
+        let formParams: any = {};
+
+
+        let useFormData = false;
+
+        if (peanuts !== undefined) {
+            formParams['peanuts'] = peanuts;
+        }
+
+        let requestOptions: request.Options = {
+            method: 'POST',
+            qs: queryParameters,
+            headers: headerParams,
+            uri: localVarPath,
+            json: true,
+        };
+
+        if (this.accessToken) {
+          requestOptions.headers["Authorization"] = "Bearer " + this.accessToken;
+        }
+
+        if (Object.keys(formParams).length) {
+            if (useFormData) {
+                (<any>requestOptions).formData = formParams;
+            } else {
+                requestOptions.form = formParams;
+            }
+        }
+        return new Promise<{ response: http.IncomingMessage; body: string;  }>((resolve, reject) => {
+            request(requestOptions, (error, response, body) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    if (response.statusCode >= 200 && response.statusCode <= 299) {
+                        resolve({ response: response, body: body });
+                    } else {
+                        reject({ response: response, body: body });
+                    }
+                }
+            });
+        });
+    }
+}
+export class IdentityService {
+    protected basePath : string;
+    protected defaultHeaders : any = {};
+    protected accessToken : string;
+    protected servicePath : string = '/identity/';
+
+    constructor(accessToken: string, url?: string) {
+      this.accessToken = accessToken;
+
+      if (url) {
+        this.basePath = url;
+      } else {
+        this.basePath = defaultBasePath;
+      }
+
+      this.basePath = this.basePath + this.servicePath;
+    }
+
+    private extendObj<T1,T2>(objA: T1, objB: T2) {
+        for(let key in objB){
+            if(objB.hasOwnProperty(key)){
+                objA[key] = objB[key];
+            }
+        }
+        return <T1&T2>objA;
+    }
+
+    /**
+     *
+     * @param id
+     * @param passwd
+     */
+    public validateUser (id: string, passwd: string) : Promise<{ response: http.IncomingMessage; body: User;  }> {
+        const localVarPath = this.basePath + `${id}/validate/${passwd}`;
+
+        let queryParameters: any = {};
+        let headerParams: any = this.extendObj({}, this.defaultHeaders);
+        let formParams: any = {};
+
+
+        let useFormData = false;
+
+        let requestOptions: request.Options = {
+            method: 'POST',
+            qs: queryParameters,
+            headers: headerParams,
+            uri: localVarPath,
+            json: true,
+        };
+
+        if (this.accessToken) {
+          requestOptions.headers["Authorization"] = "Bearer " + this.accessToken;
+        }
+
+        if (Object.keys(formParams).length) {
+            if (useFormData) {
+                (<any>requestOptions).formData = formParams;
+            } else {
+                requestOptions.form = formParams;
+            }
+        }
+        return new Promise<{ response: http.IncomingMessage; body: User;  }>((resolve, reject) => {
+            request(requestOptions, (error, response, body) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    if (response.statusCode >= 200 && response.statusCode <= 299) {
+                        resolve({ response: response, body: body });
+                    } else {
+                        reject({ response: response, body: body });
+                    }
+                }
+            });
+        });
+    }
+}
+
+
 ----
