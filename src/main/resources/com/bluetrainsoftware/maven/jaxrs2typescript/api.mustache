@@ -85,7 +85,7 @@ export class {{name}} {
      *
      {{#params}}* @param {{name}}
      {{/params}}*/
-    public {{name}} ({{#params}}{{name}}: {{#array}}Array<{{/array}}{{dataType.className}}{{#array}}>{{/array}}{{#hasMore}}, {{/hasMore}}{{/params}}) : Promise<{ response: http.IncomingMessage; {{#hasReturnType}}body: {{{returnType.className}}}; {{/hasReturnType}}{{^hasReturnType}}body?: any; {{/hasReturnType}} }> {
+    public {{name}} ({{#params}}{{name}}: {{#array}}Array<{{/array}}{{dataType.className}}{{#array}}>{{/array}}{{#hasMore}}, {{/hasMore}}{{/params}}) : Promise<{ response: http.IncomingMessage; {{#hasReturnType}}body: {{#returnType.array}}Array<{{/returnType.array}}{{{returnType.className}}}{{#returnType.array}}>{{/returnType.array}}; {{/hasReturnType}}{{^hasReturnType}}body?: any; {{/hasReturnType}} }> {
         const localVarPath = this.basePath + `{{path}}`;
 
         let queryParameters: any = {};
@@ -121,7 +121,7 @@ export class {{name}} {
 {{/bodyParam}}
         };
 
-        if (this.accessToken) {
+        if (this.accessToken !== undefined) {
           requestOptions.headers["Authorization"] = "Bearer " + this.accessToken;
         }
 
@@ -132,7 +132,7 @@ export class {{name}} {
                 requestOptions.form = formParams;
             }
         }
-        return new Promise<{ response: http.IncomingMessage; {{#hasReturnType}}body: {{{returnType.className}}}; {{/hasReturnType}}{{^hasReturnType}}body?: any; {{/hasReturnType}} }>((resolve, reject) => {
+        return new Promise<{ response: http.IncomingMessage; {{#hasReturnType}}body: {{#returnType.array}}Array<{{/returnType.array}}{{{returnType.className}}}{{#returnType.array}}>{{/returnType.array}}; {{/hasReturnType}}{{^hasReturnType}}body?: any; {{/hasReturnType}} }>((resolve, reject) => {
             request(requestOptions, (error, response, body) => {
                 if (error) {
                     reject(error);
