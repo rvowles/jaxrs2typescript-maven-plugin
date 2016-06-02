@@ -50,6 +50,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.bluetrainsoftware.maven.jaxrs2typescript.model.ParamType.BODY;
@@ -130,6 +131,7 @@ public class ServiceDescriptorGenerator {
     addModel(new RestClass(int.class, "number"));
     addModel(new RestClass(Map.class, "any"));
     addModel(new RestClass(Date.class, "Date"));
+    addModel(new RestClass(UUID.class, "string"));
   }
 
   /**
