@@ -32,44 +32,29 @@ export namespace {{classname}} {
 {{/model}}
 {{/models}}
 
-export interface Authentication {
-    /**
-    * Apply authentication settings to header and query params.
-    */
-    applyToRequest(requestOptions: request.Options): void;
-}
-
-export class OAuth implements Authentication {
-    public accessToken: string;
-
-    applyToRequest(requestOptions: request.Options): void {
-        requestOptions.headers["Authorization"] = "Bearer " + this.accessToken;
-    }
-}
 
 {{#apis}}
+
+export interface {{name}} {
+	{{#methods}}
+			{{name}}(accessToken: string{{#params}}, {{name}}: {{#array}}Array<{{/array}}{{dataType.className}}{{#array}}>{{/array}}{{/params}}) :
+			  Promise<{ response: http.IncomingMessage; {{#hasReturnType}}body: {{#returnType.array}}Array<{{/returnType.array}}{{{returnType.className}}}{{#returnType.array}}>{{/returnType.array}}; {{/hasReturnType}}{{^hasReturnType}}body?: any; {{/hasReturnType}} }>;
+	{{/methods}}
+}
+
 {{#description}}
 /**
 * {{&description}}
 */
 {{/description}}
-export class {{name}} {
+export class {{name}}Impl implements {{name}} {
     protected basePath : string;
     protected defaultHeaders : any = {};
-    protected accessToken : string;
     protected servicePath : string = '{{path}}';
 
-    constructor(accessToken: string, url?: string) {
-      this.accessToken = accessToken;
-
-      if (url) {
-        this.basePath = url;
-      } else {
-        this.basePath = defaultBasePath;
-      }
-
-      this.basePath = this.basePath + this.servicePath;
-    }
+	  constructor() {
+	    this.basePath = defaultBasePath + this.servicePath;
+	  }
 
     private extendObj<T1,T2>(objA: T1, objB: T2) {
         for(let key in objB){
@@ -85,7 +70,8 @@ export class {{name}} {
      *
      {{#params}}* @param {{name}}
      {{/params}}*/
-    public {{name}} ({{#params}}{{name}}: {{#array}}Array<{{/array}}{{dataType.className}}{{#array}}>{{/array}}{{#hasMore}}, {{/hasMore}}{{/params}}) : Promise<{ response: http.IncomingMessage; {{#hasReturnType}}body: {{#returnType.array}}Array<{{/returnType.array}}{{{returnType.className}}}{{#returnType.array}}>{{/returnType.array}}; {{/hasReturnType}}{{^hasReturnType}}body?: any; {{/hasReturnType}} }> {
+    public {{name}}(accessToken: string{{#params}}, {{name}}: {{#array}}Array<{{/array}}{{dataType.className}}{{#array}}>{{/array}}{{/params}}) :
+		    Promise<{ response: http.IncomingMessage; {{#hasReturnType}}body: {{#returnType.array}}Array<{{/returnType.array}}{{{returnType.className}}}{{#returnType.array}}>{{/returnType.array}}; {{/hasReturnType}}{{^hasReturnType}}body?: any; {{/hasReturnType}} }> {
         const localVarPath = this.basePath + `{{path}}`;
 
         let queryParameters: any = {};
@@ -121,8 +107,8 @@ export class {{name}} {
 {{/bodyParam}}
         };
 
-        if (this.accessToken !== undefined) {
-          requestOptions.headers["Authorization"] = "Bearer " + this.accessToken;
+        if (accessToken !== undefined) {
+          requestOptions.headers["Authorization"] = "Bearer " + accessToken;
         }
 
         if (Object.keys(formParams).length) {
