@@ -102,9 +102,9 @@ export class {{name}}Impl implements {{name}} {
             headers: headerParams,
             uri: localVarPath,
             json: true,
-{{#bodyParam}}
+{{#bodyParams}}
             body: {{name}},
-{{/bodyParam}}
+{{/bodyParams}}
         };
 
         if (accessToken !== undefined) {
